@@ -32,8 +32,11 @@ import {
   ChevronRight,
   Info,
 } from "lucide-react";
-import { CoinbaseScreenState } from "../types/guide";
+import { CoinbaseScreenState, HighlightedButtonTarget } from "../types/guide";
 import { logFunctionCall } from "../utils/logger";
+import { normalizeButtonTarget } from "../utils/buttonHighlightDetector";
+import { CoinbaseHighlightOverlay } from "./CoinbaseHighlightOverlay";
+import { APP_CONFIG } from "../config/appConfig";
 
 interface CoinbaseSimulatorProps {
   onCaptureScreen?: (dataUrl: string) => void;
@@ -57,7 +60,64 @@ export function CoinbaseSimulator({
   const [usdAmount, setUsdAmount] = useState<number>(50);
   const [customAmountStr, setCustomAmountStr] = useState<string>("50");
   const [paymentMethod, setPaymentMethod] = useState<string>("Chase Bank Checking (...8842)");
+  const [activeHighlight, setActiveHighlight] = useState<HighlightedButtonTarget | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const highlightTimerRef = useRef<number | null>(null);
+
+  /**
+   * Applies a temporary visual pulsing highlight and glowing outline around
+   * the targeted button for 4-5 seconds (APP_CONFIG.highlight.durationMs: 4500ms),
+   * then makes it disappear cleanly.
+   *
+   * @param target - The normalized button target or null.
+   */
+  const applyTemporaryHighlight = (target: HighlightedButtonTarget | null) => {
+    logFunctionCall("COINBASE_SIMULATOR", "applyTemporaryHighlight", { target });
+    if (highlightTimerRef.current !== null) {
+      window.clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = null;
+    }
+
+    if (!target) {
+      setActiveHighlight(null);
+      return;
+    }
+
+    setActiveHighlight(target);
+
+    highlightTimerRef.current = window.setTimeout(() => {
+      logFunctionCall("COINBASE_SIMULATOR", "clearHighlightTimeout", { target });
+      setActiveHighlight(null);
+      highlightTimerRef.current = null;
+    }, APP_CONFIG.highlight.durationMs);
+  };
+
+  // Sync with prop updates
+  useEffect(() => {
+    if (highlightedElement) {
+      const normalized = normalizeButtonTarget(highlightedElement);
+      applyTemporaryHighlight(normalized);
+    }
+  }, [highlightedElement]);
+
+  // Support direct window custom events for flexible cross-component triggering
+  useEffect(() => {
+    const handleHighlightEvent = (e: Event) => {
+      const customEvt = e as CustomEvent<{ button: string }>;
+      if (customEvt.detail?.button) {
+        const normalized = normalizeButtonTarget(customEvt.detail.button);
+        applyTemporaryHighlight(normalized);
+      }
+    };
+
+    window.addEventListener("coinbase-highlight-button", handleHighlightEvent);
+    return () => {
+      window.removeEventListener("coinbase-highlight-button", handleHighlightEvent);
+      if (highlightTimerRef.current !== null) {
+        window.clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
 
   // Dynamic fee calculation
   const coinbaseFee = usdAmount > 0 ? (usdAmount <= 25 ? 1.49 : 1.99) : 0;
@@ -305,25 +365,40 @@ export function CoinbaseSimulator({
 
               {/* Amount preset buttons */}
               <div className="grid grid-cols-4 gap-2">
-                {[10, 25, 50, 100].map((preset) => (
-                  <button
-                    key={preset}
-                    onClick={() => {
-                      logFunctionCall("COINBASE_SIMULATOR", "selectPresetAmount", {
-                        preset,
-                      });
-                      setUsdAmount(preset);
-                      setCustomAmountStr(String(preset));
-                    }}
-                    className={`py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                      usdAmount === preset
-                        ? "bg-cyan-600 text-white border-cyan-500 shadow-sm"
-                        : "bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800"
-                    }`}
-                  >
-                    ${preset}
-                  </button>
-                ))}
+                {[10, 25, 50, 100].map((preset) => {
+                  const isPresetHighlighted = activeHighlight === `preset_${preset}`;
+                  return (
+                    <div key={preset} className="relative">
+                      {isPresetHighlighted && (
+                        <CoinbaseHighlightOverlay
+                          variant="preset"
+                          color="cyan"
+                          targetName={`$${preset}`}
+                        />
+                      )}
+                      <button
+                        onClick={() => {
+                          logFunctionCall("COINBASE_SIMULATOR", "selectPresetAmount", {
+                            preset,
+                          });
+                          setUsdAmount(preset);
+                          setCustomAmountStr(String(preset));
+                        }}
+                        className={`w-full py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                          usdAmount === preset
+                            ? "bg-cyan-600 text-white border-cyan-500 shadow-sm"
+                            : "bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800"
+                        } ${
+                          isPresetHighlighted
+                            ? "ring-2 ring-cyan-400 border-cyan-400 font-bold scale-[1.04]"
+                            : ""
+                        }`}
+                      >
+                        ${preset}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Payment Method Selector */}
@@ -377,12 +452,28 @@ export function CoinbaseSimulator({
             <div className="mt-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-sm text-slate-100">Order Preview</h4>
-                <button
-                  onClick={() => setStep("input")}
-                  className="text-xs text-cyan-400 hover:underline"
-                >
-                  Edit Amount
-                </button>
+                <div className="relative">
+                  {activeHighlight === "edit_amount" && (
+                    <CoinbaseHighlightOverlay
+                      variant="inline"
+                      color="cyan"
+                      targetName="Edit Amount"
+                    />
+                  )}
+                  <button
+                    onClick={() => {
+                      logFunctionCall("COINBASE_SIMULATOR", "clickEditAmount", {});
+                      setStep("input");
+                    }}
+                    className={`text-xs text-cyan-400 hover:underline transition-all ${
+                      activeHighlight === "edit_amount"
+                        ? "font-bold ring-2 ring-cyan-400 px-2 py-0.5 rounded bg-cyan-950/40 scale-105"
+                        : ""
+                    }`}
+                  >
+                    Edit Amount
+                  </button>
+                </div>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-center">
@@ -473,36 +564,62 @@ export function CoinbaseSimulator({
         {/* Action Button Area */}
         <div className="mt-6 pt-3 border-t border-slate-800/80">
           {step === "input" && (
-            <button
-              onClick={() => {
-                logFunctionCall("COINBASE_SIMULATOR", "clickPreviewBuy", {
-                  usdAmount,
-                });
-                setStep("preview");
-                setTimeout(handlePushToGuide, 150);
-              }}
-              className="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-[0.99] text-white font-bold text-sm transition-all shadow-md shadow-cyan-600/20 flex items-center justify-center gap-2"
-            >
-              <span>Preview Buy</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              {activeHighlight === "preview_buy" && (
+                <CoinbaseHighlightOverlay
+                  variant="action"
+                  color="cyan"
+                  targetName="Preview Buy"
+                />
+              )}
+              <button
+                onClick={() => {
+                  logFunctionCall("COINBASE_SIMULATOR", "clickPreviewBuy", {
+                    usdAmount,
+                  });
+                  setStep("preview");
+                  setTimeout(handlePushToGuide, 150);
+                }}
+                className={`w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-[0.99] text-white font-bold text-sm transition-all shadow-md shadow-cyan-600/20 flex items-center justify-center gap-2 ${
+                  activeHighlight === "preview_buy"
+                    ? "ring-4 ring-cyan-300 ring-offset-2 ring-offset-slate-900 shadow-[0_0_35px_rgba(34,211,238,0.95)] scale-[1.01]"
+                    : ""
+                }`}
+              >
+                <span>Preview Buy</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           )}
 
           {step === "preview" && (
-            <button
-              onClick={() => {
-                logFunctionCall("COINBASE_SIMULATOR", "clickBuyNow", {
-                  cryptoQuantity,
-                  usdAmount,
-                });
-                setStep("success");
-                setTimeout(handlePushToGuide, 150);
-              }}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-sm transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
-            >
-              <span>Buy now</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              {activeHighlight === "buy_now" && (
+                <CoinbaseHighlightOverlay
+                  variant="action"
+                  color="emerald"
+                  targetName="Buy now"
+                />
+              )}
+              <button
+                onClick={() => {
+                  logFunctionCall("COINBASE_SIMULATOR", "clickBuyNow", {
+                    cryptoQuantity,
+                    usdAmount,
+                  });
+                  setStep("success");
+                  setTimeout(handlePushToGuide, 150);
+                }}
+                className={`w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-sm transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 ${
+                  activeHighlight === "buy_now"
+                    ? "ring-4 ring-emerald-300 ring-offset-2 ring-offset-slate-900 shadow-[0_0_35px_rgba(52,211,153,0.95)] scale-[1.01]"
+                    : ""
+                }`}
+              >
+                <span>Buy now</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </div>
       </div>

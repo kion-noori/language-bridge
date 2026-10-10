@@ -72,6 +72,12 @@ export const APP_CONFIG = {
     maxDimension: 1024, // Resize frame to max 1024px to preserve network bandwidth
   },
 
+  // Temporary Visual Highlight Configuration (Coinbase Sandbox only)
+  highlight: {
+    durationMs: 4500, // 4.5 seconds duration (within 4-5 seconds) before disappearing
+    pulseIntervalMs: 1000,
+  },
+
   // Supported Languages
   languages: [
     {

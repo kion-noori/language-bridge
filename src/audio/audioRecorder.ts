@@ -21,6 +21,7 @@ import { logError, logFunctionCall } from "../utils/logger";
 
 export type AudioChunkCallback = (base64PcmChunk: string) => void;
 export type VolumeCallback = (volumeLevel: number) => void;
+export type UserSpeechCallback = () => void;
 
 export class AudioRecorder {
   private audioContext: AudioContext | null = null;
@@ -31,19 +32,24 @@ export class AudioRecorder {
 
   private onAudioChunk: AudioChunkCallback | null = null;
   private onVolume: VolumeCallback | null = null;
+  private onUserSpeechStart: UserSpeechCallback | null = null;
+  private speechFramesCount = 0;
 
   /**
-   * Initializes the recorder with chunk and volume level listeners.
+   * Initializes the recorder with chunk, volume level, and speech start listeners.
    *
    * @param onAudioChunk - Callback receiving base64 16kHz PCM audio chunks.
    * @param onVolume - Optional callback receiving volume intensity (0.0 to 1.0).
+   * @param onUserSpeechStart - Optional callback triggered immediately when user voice is detected.
    */
   constructor(
     onAudioChunk: AudioChunkCallback,
-    onVolume?: VolumeCallback
+    onVolume?: VolumeCallback,
+    onUserSpeechStart?: UserSpeechCallback
   ) {
     this.onAudioChunk = onAudioChunk;
     this.onVolume = onVolume || null;
+    this.onUserSpeechStart = onUserSpeechStart || null;
     logFunctionCall("AUDIO_RECORDER", "constructor", {});
   }
 
@@ -88,14 +94,28 @@ export class AudioRecorder {
         const inputData = event.inputBuffer.getChannelData(0);
 
         // Compute volume RMS
+        let sumSquares = 0;
+        for (let i = 0; i < inputData.length; i++) {
+          sumSquares += inputData[i] * inputData[i];
+        }
+        const rms = Math.sqrt(sumSquares / inputData.length);
+        const normalizedVol = Math.min(1, rms * 5); // amplify visual response
+
         if (this.onVolume) {
-          let sumSquares = 0;
-          for (let i = 0; i < inputData.length; i++) {
-            sumSquares += inputData[i] * inputData[i];
-          }
-          const rms = Math.sqrt(sumSquares / inputData.length);
-          const normalizedVol = Math.min(1, rms * 5); // amplify visual response
           this.onVolume(normalizedVol);
+        }
+
+        // Real-time Voice Activity Detection (VAD) for instant barge-in interruption
+        if (normalizedVol >= APP_CONFIG.audio.bargeInVolumeThreshold) {
+          this.speechFramesCount++;
+          if (
+            this.speechFramesCount >= APP_CONFIG.audio.bargeInConsecutiveFrames &&
+            this.onUserSpeechStart
+          ) {
+            this.onUserSpeechStart();
+          }
+        } else {
+          this.speechFramesCount = 0;
         }
 
         // Downsample input float buffer to 16kHz

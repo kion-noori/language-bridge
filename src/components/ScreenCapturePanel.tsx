@@ -31,13 +31,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { CoinbaseSimulator } from "./CoinbaseSimulator";
-import { ScreenSourceType } from "../types/guide";
+import { HighlightedButtonTarget, ScreenSourceType } from "../types/guide";
 import { logFunctionCall, logError } from "../utils/logger";
 
 interface ScreenCapturePanelProps {
   onFrameAvailable: (base64Jpeg: string) => void;
   onRequestManualAnalysis: (base64Jpeg: string) => void;
   isAnalyzing: boolean;
+  highlightedButton?: HighlightedButtonTarget | null;
 }
 
 /**
@@ -50,6 +51,7 @@ export function ScreenCapturePanel({
   onFrameAvailable,
   onRequestManualAnalysis,
   isAnalyzing,
+  highlightedButton,
 }: ScreenCapturePanelProps): React.JSX.Element {
   const [sourceType, setSourceType] = useState<ScreenSourceType>("simulator");
   const [activeFrameUrl, setActiveFrameUrl] = useState<string | null>(null);
@@ -270,7 +272,10 @@ export function ScreenCapturePanel({
         {/* Left: The Active Visual Target */}
         <div className="lg:col-span-7 flex flex-col gap-3">
           {sourceType === "simulator" && (
-            <CoinbaseSimulator onCaptureScreen={handleSimulatorFrame} />
+            <CoinbaseSimulator
+              onCaptureScreen={handleSimulatorFrame}
+              highlightedElement={highlightedButton}
+            />
           )}
 
           {(sourceType === "screenshare" || sourceType === "camera") && (

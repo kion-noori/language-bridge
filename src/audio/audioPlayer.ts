@@ -78,12 +78,19 @@ export class AudioPlayer {
     return float32Array;
   }
 
+  private isInterruptedUntil = 0;
+
   /**
    * Queues and schedules a chunk of base64-encoded 24kHz PCM for playback.
    *
    * @param base64AudioChunk - Base64 raw PCM chunk.
    */
   public playChunk(base64AudioChunk: string): void {
+    // If we were just interrupted, drop trailing packets for a short window
+    if (Date.now() < this.isInterruptedUntil) {
+      return;
+    }
+
     try {
       const ctx = this.ensureContext();
       const float32Data = this.base64ToFloat32(base64AudioChunk);
@@ -133,11 +140,17 @@ export class AudioPlayer {
 
   /**
    * Instantly stops playback and flushes queued audio (Barge-in / interruption).
+   * Drops any in-flight chunks that arrive immediately after interruption.
+   *
+   * @param suppressDurationMs - Duration in milliseconds to discard trailing in-flight chunks.
    */
-  public stopAndFlush(): void {
+  public stopAndFlush(suppressDurationMs: number = 600): void {
     logFunctionCall("AUDIO_PLAYER", "stopAndFlush", {
       activeSources: this.activeSourceNodes.length,
+      suppressDurationMs,
     });
+
+    this.isInterruptedUntil = Date.now() + suppressDurationMs;
 
     for (const node of this.activeSourceNodes) {
       try {

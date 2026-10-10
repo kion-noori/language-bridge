@@ -28,12 +28,14 @@ import { AuditLogModal } from "./components/AuditLogModal";
 import { APP_CONFIG, getLanguageConfig, SupportedLanguage } from "./config/appConfig";
 import { LiveClient } from "./services/liveClient";
 import {
+  HighlightedButtonTarget,
   ScreenAnalysisResult,
   SessionStatus,
   TranscriptItem,
   TrustLoopStageId,
 } from "./types/guide";
 import { logFunctionCall } from "./utils/logger";
+import { detectMentionedButton } from "./utils/buttonHighlightDetector";
 import { ShieldCheck, Info, Sparkles, HeartHandshake } from "lucide-react";
 
 /**
@@ -53,14 +55,41 @@ export default function App(): React.JSX.Element {
   const [isAgentSpeaking, setIsAgentSpeaking] = useState<boolean>(false);
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState<boolean>(false);
   const [isAuditLogOpen, setIsAuditLogOpen] = useState<boolean>(false);
+  const [highlightedButton, setHighlightedButton] = useState<HighlightedButtonTarget | null>(null);
 
   const latestFrameRef = useRef<string | null>(null);
   const liveClientRef = useRef<LiveClient | null>(null);
+  const buttonHighlightTimerRef = useRef<number | null>(null);
+
+  /**
+   * Triggers a temporary visual highlight (pulsing circle & glowing outline)
+   * around a specific button on the Coinbase Sandbox for 4-5 seconds, then
+   * clears it cleanly.
+   *
+   * @param target - The button to highlight.
+   */
+  const triggerButtonHighlight = (target: HighlightedButtonTarget | null) => {
+    if (!target) return;
+    logFunctionCall("APP", "triggerButtonHighlight", { target });
+    setHighlightedButton(target);
+
+    if (buttonHighlightTimerRef.current !== null) {
+      window.clearTimeout(buttonHighlightTimerRef.current);
+      buttonHighlightTimerRef.current = null;
+    }
+
+    buttonHighlightTimerRef.current = window.setTimeout(() => {
+      logFunctionCall("APP", "clearButtonHighlightTimeout", { target });
+      setHighlightedButton(null);
+      buttonHighlightTimerRef.current = null;
+    }, APP_CONFIG.highlight.durationMs);
+  };
 
   logFunctionCall("APP", "render", {
     status,
     language: currentLanguage.code,
     trustStage,
+    highlightedButton,
   });
 
   /**
@@ -71,9 +100,24 @@ export default function App(): React.JSX.Element {
       onStatusChange: (newStatus) => setStatus(newStatus),
       onTranscript: (item) => {
         setTranscript((prev) => [...prev, item]);
+        // When the agent mentions a button in spoken output or transcript, highlight it
+        if (item.role === "agent") {
+          const detected = detectMentionedButton(item.text, item.englishTranslation);
+          if (detected) {
+            triggerButtonHighlight(detected);
+          }
+        }
       },
       onTrustStageChange: (stage) => setTrustStage(stage),
-      onAnalysisResult: (result) => setAnalysis(result),
+      onAnalysisResult: (result) => {
+        setAnalysis(result);
+        // Detect mentioned button from guidance fields
+        const combined = `${result.nextStepAdvice || ""} ${result.spokenScript || ""} ${result.confirmationPrompt || ""}`;
+        const detected = detectMentionedButton(combined);
+        if (detected) {
+          triggerButtonHighlight(detected);
+        }
+      },
       onMicVolume: (vol) => setMicVolume(vol),
       onAgentSpeakingChange: (speaking) => setIsAgentSpeaking(speaking),
     });
@@ -84,6 +128,9 @@ export default function App(): React.JSX.Element {
 
     return () => {
       client.disconnect();
+      if (buttonHighlightTimerRef.current !== null) {
+        window.clearTimeout(buttonHighlightTimerRef.current);
+      }
     };
   }, []);
 
@@ -184,6 +231,20 @@ export default function App(): React.JSX.Element {
     setTrustStage("guided_next_step");
 
     const confirmationText = currentLanguage.confirmationPhrases[0] || "Yes";
+    const guidanceText =
+      analysis?.nextStepAdvice ||
+      `عالی است. حالا لطفاً روی دکمه آبی رنگ کلیک کنید. من در هر مرحله در کنار شما هستم.`;
+    const englishTranslation =
+      "Excellent. Now please click the blue button. I am right here with you.";
+
+    // Trigger visual highlight on the guided button
+    const detected = detectMentionedButton(guidanceText, englishTranslation);
+    if (detected) {
+      triggerButtonHighlight(detected);
+    } else {
+      triggerButtonHighlight("preview_buy");
+    }
+
     setTranscript((prev) => [
       ...prev,
       {
@@ -197,10 +258,8 @@ export default function App(): React.JSX.Element {
         id: `${Date.now()}-guidance`,
         timestamp: new Date().toLocaleTimeString(),
         role: "agent",
-        text:
-          analysis?.nextStepAdvice ||
-          `عالی است. حالا لطفاً روی دکمه آبی رنگ کلیک کنید. من در هر مرحله در کنار شما هستم.`,
-        englishTranslation: "Excellent. Now please click the blue button. I am right here with you.",
+        text: guidanceText,
+        englishTranslation,
         trustStage: "guided_next_step",
       },
     ]);
@@ -278,6 +337,7 @@ export default function App(): React.JSX.Element {
               onFrameAvailable={handleFrameAvailable}
               onRequestManualAnalysis={handleManualInspectScreen}
               isAnalyzing={status === "analyzing"}
+              highlightedButton={highlightedButton}
             />
           </div>
 

@@ -122,6 +122,17 @@ Trust is paramount when dealing with financial interfaces. Language Bridge hardc
 - Positioned prominently directly below the global header, ensuring the primary "Start Live Voice Guide" action and microphone controls are immediately visible upon landing without any scrolling.
 - Houses the hero-sized voice session trigger, live audio waveforms (16kHz mic + 24kHz model output), real-time Barge-In status indicators, and silent text fallback input.
 
+### 4.8. Temporary Visual Button Highlight Engine (`src/components/CoinbaseHighlightOverlay.tsx` & `src/utils/buttonHighlightDetector.ts`)
+- **Intent**: When the guide agent mentions a specific button while guiding the non-native speaker (e.g., "Preview Buy", "$50", or "Buy now"), a temporary visual highlight draws immediate visual attention to that button on the built-in Coinbase Sandbox.
+- **Visual Presentation**:
+  - Concentric expanding pulsing circle (ping radar wave animation) expanding outwards.
+  - Radiant neon glowing outline around the button perimeter (`ring-4` / `shadow` / `animate-pulse`).
+  - Corner radar beacon circle with active ping pulsation.
+  - Specialized color accents: Cyan glowing outline for "Preview Buy", amount presets ($10, $25, $50, $100), and "Edit Amount"; Emerald glowing outline for the final "Buy now" commitment button.
+- **Strict 4–5 Second Duration**: The highlight remains visible for exactly 4.5 seconds (`APP_CONFIG.highlight.durationMs: 4500ms`), after which it automatically disappears. Re-mentioning or mentioning another button resets the timer.
+- **Multilingual Mention Detection**: Analyzes real-time agent output transcripts and guidance advice across all supported languages (including Farsi, Spanish, Arabic, Hindi, Vietnamese, Chinese, and English). Handles numeral normalization (e.g., Persian `۵۰` -> `50`) and strict phrase prioritization so compound phrases like "Preview Buy" (`پیش‌نمایش خرید`) are never conflated with "Buy" (`خرید`).
+- **Sandbox Boundary Isolation**: Implemented exclusively on the built-in Coinbase Sandbox DOM; screen detection, voice streaming, barge-in detection, and the 4-stage Trust Loop remain completely unaltered. Offscreen canvas capture frames remain pristine.
+
 ---
 
 ## 5. Security & Regulatory Compliance Boundary
