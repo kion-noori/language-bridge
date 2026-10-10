@@ -123,17 +123,14 @@ Trust is paramount when dealing with financial interfaces. Language Bridge hardc
 - Houses the hero-sized voice session trigger, live audio waveforms (16kHz mic + 24kHz model output), real-time Barge-In status indicators, and silent text fallback input.
 
 ### 4.8. Temporary Visual Button Highlight Engine (`src/components/CoinbaseHighlightOverlay.tsx` & `src/utils/buttonHighlightDetector.ts`)
-- **Intent**: When the guide agent mentions a specific button while guiding the non-native speaker (e.g., "Preview Buy", "$50", or "Buy now"), or when interacting with buttons in the demo, a temporary visual highlight draws immediate visual attention to that button on the built-in Coinbase Sandbox.
+- **Intent**: When the guide agent mentions a specific button while guiding the non-native speaker (e.g., "Preview Buy", "$50", or "Buy now"), a temporary visual highlight draws immediate visual attention to that button on the built-in Coinbase Sandbox.
 - **Visual Presentation**:
-  - Concentric expanding pulsing circle (ping radar wave animation) expanding outwards continuously.
-  - Radiant neon glowing outline around the button perimeter (`ring-4` / `shadow` / persistent `animate-highlight-aura` keyframes).
+  - Concentric expanding pulsing circle (ping radar wave animation) expanding outwards.
+  - Radiant neon glowing outline around the button perimeter (`ring-4` / `shadow` / `animate-pulse`).
   - Corner radar beacon circle with active ping pulsation.
   - Specialized color accents: Cyan glowing outline for "Preview Buy", amount presets ($10, $25, $50, $100), and "Edit Amount"; Emerald glowing outline for the final "Buy now" commitment button.
-- **Guaranteed 4–5 Second Duration on Every Button**:
-  - The highlight remains visibly illuminated for 4–5 seconds (`APP_CONFIG.highlight.durationMs: 4500ms`) on every button (Preview Buy, $10, $25, $50, $100, Buy now, Edit Amount) before cleanly disappearing.
-  - Locking mechanism prevents subsequent rapid streaming transcript chunks (< 4000ms) or casual mentions of "buy Bitcoin" from prematurely clearing or stomping the active button highlight.
-  - Direct clicks on any button ($10, $25, $50, $100, Preview Buy, Buy now, Edit Amount) also activate the pulsing circle and glowing outline for the full 4–5 seconds.
-- **Multilingual Mention Detection**: Analyzes real-time agent output transcripts and guidance advice across all supported languages (including Farsi, Spanish, Arabic, Hindi, Vietnamese, Chinese, and English). Handles numeral normalization (e.g., Persian `۵۰` -> `50`) and strict phrase prioritization so general phrases like "buy Bitcoin" or "صفحه خرید" are not conflated with the "Buy now" (`خرید اکنون`) commitment button.
+- **Strict 4–5 Second Duration**: The highlight remains visible for exactly 4.5 seconds (`APP_CONFIG.highlight.durationMs: 4500ms`), after which it automatically disappears. Re-mentioning or mentioning another button resets the timer.
+- **Multilingual Mention Detection**: Analyzes real-time agent output transcripts and guidance advice across all supported languages (including Farsi, Spanish, Arabic, Hindi, Vietnamese, Chinese, and English). Handles numeral normalization (e.g., Persian `۵۰` -> `50`) and strict phrase prioritization so compound phrases like "Preview Buy" (`پیش‌نمایش خرید`) are never conflated with "Buy" (`خرید`).
 - **Sandbox Boundary Isolation**: Implemented exclusively on the built-in Coinbase Sandbox DOM; screen detection, voice streaming, barge-in detection, and the 4-stage Trust Loop remain completely unaltered. Offscreen canvas capture frames remain pristine.
 
 ### 4.9. Viewport-Based Auto-Detection for Coinbase Sandbox (`src/utils/useViewportVisibility.ts`)

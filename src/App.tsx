@@ -69,9 +69,6 @@ export default function App(): React.JSX.Element {
     isSandboxInViewRef.current = isSandboxInView;
   }, [isSandboxInView]);
 
-  const highlightStartTimeRef = useRef<number>(0);
-  const activeHighlightTargetRef = useRef<HighlightedButtonTarget | null>(null);
-
   /**
    * Triggers a temporary visual highlight (pulsing circle & glowing outline)
    * around a specific button on the Coinbase Sandbox for 4-5 seconds, then
@@ -81,25 +78,7 @@ export default function App(): React.JSX.Element {
    */
   const triggerButtonHighlight = (target: HighlightedButtonTarget | null) => {
     if (!target) return;
-    const now = Date.now();
-
-    // Prevent rapid transcript churn (< 4000ms) from cancelling or clobbering an active button highlight
-    if (
-      activeHighlightTargetRef.current &&
-      activeHighlightTargetRef.current !== target &&
-      now - highlightStartTimeRef.current < 4000
-    ) {
-      logFunctionCall("APP", "suppressRapidHighlightOverride", {
-        active: activeHighlightTargetRef.current,
-        attempted: target,
-        elapsedMs: now - highlightStartTimeRef.current,
-      });
-      return;
-    }
-
     logFunctionCall("APP", "triggerButtonHighlight", { target });
-    activeHighlightTargetRef.current = target;
-    highlightStartTimeRef.current = now;
     setHighlightedButton(target);
 
     if (buttonHighlightTimerRef.current !== null) {
@@ -110,7 +89,6 @@ export default function App(): React.JSX.Element {
     buttonHighlightTimerRef.current = window.setTimeout(() => {
       logFunctionCall("APP", "clearButtonHighlightTimeout", { target });
       setHighlightedButton(null);
-      activeHighlightTargetRef.current = null;
       buttonHighlightTimerRef.current = null;
     }, APP_CONFIG.highlight.durationMs);
   };
