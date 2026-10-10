@@ -19,7 +19,7 @@
  * =============================================================================
  */
 
-import { useState, useEffect, RefObject } from "react";
+import { useState, useEffect, useRef, RefObject } from "react";
 import { logFunctionCall } from "./logger";
 
 export interface ViewportVisibilityOptions {
@@ -44,6 +44,9 @@ export function useViewportVisibility(
   // STRICT REQUIREMENT: Do not assume visible on initial load or before scroll
   const [isVisible, setIsVisible] = useState<boolean>(false);
 
+  const callbackRef = useRef(onVisibilityChange);
+  callbackRef.current = onVisibilityChange;
+
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
@@ -51,7 +54,7 @@ export function useViewportVisibility(
     if (!("IntersectionObserver" in window)) {
       // Fallback for environments lacking IntersectionObserver
       setIsVisible(true);
-      onVisibilityChange?.(true);
+      callbackRef.current?.(true);
       return;
     }
 
@@ -69,9 +72,7 @@ export function useViewportVisibility(
         });
 
         setIsVisible(intersecting);
-        if (onVisibilityChange) {
-          onVisibilityChange(intersecting);
-        }
+        callbackRef.current?.(intersecting);
       },
       {
         root: null, // Viewport
@@ -85,7 +86,7 @@ export function useViewportVisibility(
     return () => {
       observer.disconnect();
     };
-  }, [elementRef, threshold, rootMargin, onVisibilityChange]);
+  }, [elementRef, threshold, rootMargin]);
 
   return isVisible;
 }

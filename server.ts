@@ -30,12 +30,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { WebSocketServer, WebSocket } from "ws";
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
-import {
-  APP_CONFIG,
-  buildSystemInstruction,
-  getLanguageConfig,
-  getAgentGreeting,
-} from "./src/config/appConfig";
+import { APP_CONFIG, buildSystemInstruction, getLanguageConfig } from "./src/config/appConfig";
 
 dotenv.config();
 
@@ -131,14 +126,12 @@ app.post("/api/guidance", async (req: Request, res: Response): Promise<void> => 
 
     const promptText = `
 You are Language Bridge, a trusted multilingual visual voice guide.
-The user is navigating a crypto interface (like Coinbase) and their goal is: "${goal || lang.sampleGoal}".
-
-IMPORTANT: The Coinbase trading screen is already provided and directly visible in the image. You CAN ALREADY SEE THIS SCREEN CLEARLY. Do NOT ask the user to "show your screen", "open your screen", or "share your screen". Explain the screen elements directly.
+The user is navigating a digital interface (such as a crypto trading screen like Coinbase or a public benefits / Medicaid income application) and their goal is: "${goal || lang.sampleGoal}".
 
 Examine the provided screen carefully. Follow the STRICT 4-STAGE TRUST LOOP:
-1. Explain what is visible on this screen in simple, reassuring terms in ${lang.name} (${lang.nativeName}).
-2. Surface all risks, Coinbase fees, network fees, spread, and the irreversibility of crypto purchases in plain language.
-3. Formulate an explicit verbal confirmation question asking the user if they want to proceed (e.g. "Do you want me to guide you to click 'Preview Buy' now?").
+1. Explain what is visible on this screen in simple, reassuring terms in ${lang.name} (${lang.nativeName}) (e.g., Household Size, Monthly Gross Income, Employment Status, or Bitcoin purchase amounts).
+2. Surface all risks, financial mechanics, or verification rules (such as gross income tax reporting rules, Coinbase processing fees, network fees, and irreversibility) in plain language.
+3. Formulate an explicit verbal confirmation question asking the user if they want to proceed (e.g. "Do you want me to guide you to click 'Continue' or 'Preview Buy' now?").
 4. Formulate the exact safe next step guidance.
 
 Return your response in JSON format matching this schema:
@@ -270,18 +263,15 @@ wss.on("connection", async (clientWs: WebSocket) => {
   console.info("⚡ New client connected to /live WebSocket");
   let activeLanguage = getLanguageConfig(APP_CONFIG.defaultLanguageCode);
   let liveSession: any = null;
-  let isScreenFed = false;
 
   /**
    * Initializes or re-initializes the Gemini Live API session.
    *
    * @param langCode - Language code.
-   * @param hasScreenBeenFed - Whether screen is currently fed.
    */
-  async function setupLiveSession(langCode: string, hasScreenBeenFed = false): Promise<void> {
+  async function setupLiveSession(langCode: string): Promise<void> {
     activeLanguage = getLanguageConfig(langCode);
-    isScreenFed = hasScreenBeenFed;
-    console.info(`🎙️ Initializing Gemini Live session for language: ${activeLanguage.name} (${activeLanguage.code}), screenFed: ${isScreenFed}`);
+    console.info(`🎙️ Initializing Gemini Live session for language: ${activeLanguage.name} (${activeLanguage.code})`);
 
     try {
       if (liveSession) {
@@ -299,7 +289,7 @@ wss.on("connection", async (clientWs: WebSocket) => {
             type: "transcript",
             transcript: {
               role: "agent",
-              text: getAgentGreeting(activeLanguage, isScreenFed),
+              text: activeLanguage.agentGreeting,
               trustStage: "screen_parsing",
             },
           })
@@ -307,7 +297,7 @@ wss.on("connection", async (clientWs: WebSocket) => {
         return;
       }
 
-      const systemPrompt = buildSystemInstruction(activeLanguage, isScreenFed);
+      const systemPrompt = buildSystemInstruction(activeLanguage);
 
       logServerGenAiCall(APP_CONFIG.models.liveAudioVideo, systemPrompt, {
         voice: APP_CONFIG.audio.voiceName,
@@ -394,7 +384,7 @@ wss.on("connection", async (clientWs: WebSocket) => {
         },
       });
 
-      // Send initial greeting to client transcript
+      // Send greeting to client transcript
       if (clientWs.readyState === WebSocket.OPEN) {
         clientWs.send(
           JSON.stringify({
@@ -407,7 +397,7 @@ wss.on("connection", async (clientWs: WebSocket) => {
             type: "transcript",
             transcript: {
               role: "agent",
-              text: getAgentGreeting(activeLanguage, isScreenFed),
+              text: activeLanguage.agentGreeting,
               trustStage: "screen_parsing",
             },
           })
@@ -428,7 +418,7 @@ wss.on("connection", async (clientWs: WebSocket) => {
             type: "transcript",
             transcript: {
               role: "agent",
-              text: getAgentGreeting(activeLanguage, isScreenFed),
+              text: activeLanguage.agentGreeting,
               trustStage: "screen_parsing",
             },
           })
@@ -442,43 +432,7 @@ wss.on("connection", async (clientWs: WebSocket) => {
       const msg = JSON.parse(rawMessage.toString());
 
       if (msg.type === "init") {
-        await setupLiveSession(
-          msg.languageCode || APP_CONFIG.defaultLanguageCode,
-          Boolean(msg.hasScreenBeenFed)
-        );
-        return;
-      }
-
-      // Handle screen visibility change notification
-      if (msg.type === "screen_fed") {
-        isScreenFed = Boolean(msg.hasScreenBeenFed ?? true);
-        console.info(`🖥️ Screen visibility updated to ${isScreenFed} for language: ${activeLanguage.name}`);
-        if (liveSession) {
-          if (isScreenFed) {
-            liveSession.sendRealtimeInput({
-              text: `[SYSTEM CONTEXT: The built-in Coinbase Sandbox screen is present and visible. You can clearly see the Coinbase Bitcoin buy screen in front of you. Directly proceed to explain what is visible on screen following the 4-Stage Trust Loop in ${activeLanguage.name}.]`,
-            });
-          } else {
-            liveSession.sendRealtimeInput({
-              text: `[SYSTEM CONTEXT: The screen is no longer visible. Politely wait until the user makes the Coinbase screen visible or shares/uploads their screen before explaining screen elements.]`,
-            });
-          }
-        }
-        return;
-      }
-
-      // Handle explicit barge-in notification from client VAD
-      if (msg.type === "barge_in") {
-        console.info("⚡ Explicit barge-in message received from client");
-        // Confirm interruption back to client to ensure immediate audio queue clearance
-        if (clientWs.readyState === WebSocket.OPEN) {
-          clientWs.send(
-            JSON.stringify({
-              type: "interrupted",
-              interrupted: true,
-            })
-          );
-        }
+        await setupLiveSession(msg.languageCode || APP_CONFIG.defaultLanguageCode);
         return;
       }
 
@@ -494,12 +448,6 @@ wss.on("connection", async (clientWs: WebSocket) => {
 
       // Stream video / screen capture frame (JPEG)
       if (msg.type === "video" && msg.video && liveSession) {
-        if (!isScreenFed) {
-          isScreenFed = true;
-          liveSession.sendRealtimeInput({
-            text: `[SYSTEM CONTEXT: The user has now fed their Coinbase screen frame to you. You can now see the screen clearly in front of you. Explain what is on screen following the 4-Stage Trust Loop in ${activeLanguage.name}.]`,
-          });
-        }
         const cleanFrame = cleanBase64Data(msg.video);
         liveSession.sendRealtimeInput({
           video: {

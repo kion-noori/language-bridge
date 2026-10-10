@@ -28,7 +28,8 @@ export type HighlightedButtonTarget =
   | "preset_25"
   | "preset_50"
   | "preset_100"
-  | "edit_amount";
+  | "edit_amount"
+  | "continue";
 
 export type SessionStatus =
   | "idle"
@@ -41,6 +42,7 @@ export type SessionStatus =
 
 export type ScreenSourceType =
   | "simulator"
+  | "benefits"
   | "screenshare"
   | "upload"
   | "camera";

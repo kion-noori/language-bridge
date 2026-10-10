@@ -122,6 +122,13 @@ export function normalizeButtonTarget(
     case "ویرایش مبلغ":
       return "edit_amount";
 
+    case "continue":
+    case "دکمه ادامه":
+    case "ادامه":
+    case "continuar":
+    case "متابعة":
+      return "continue";
+
     default:
       return null;
   }
@@ -239,14 +246,16 @@ export function detectMentionedButton(
     }
   }
 
-  // 4. Check for "Buy" / "Buy now" (only if not preview)
+  // 4. Check for "Buy" / "Buy now" commitment button (only explicit button or action)
   const buyPatterns = [
     /\bbuy\s*now\b/i,
     /\bbuy\s*button\b/i,
-    /\bclick\s*buy\b/i,
-    /\btap\s*buy\b/i,
-    /\bpress\s*buy\b/i,
-    /\bbuy\b/i,
+    /\bclick\s*(?:the\s*)?buy\b/i,
+    /\btap\s*(?:the\s*)?buy\b/i,
+    /\bpress\s*(?:the\s*)?buy\b/i,
+    /\bconfirm\s*(?:the\s*)?buy\b/i,
+    /\bgreen\s*button\b/i,
+    /\bbutton\s*(?:labeled|named)?\s*buy\b/i,
     /خرید\s*اکنون/i,
     /خرید\s*الان/i,
     /خرید\s*نهایی/i,
@@ -254,21 +263,60 @@ export function detectMentionedButton(
     /دکمه\s*سبز/i,
     /تایید\s*خرید/i,
     /ثبت\s*سفارش/i,
-    /خرید/i,
+    /روی\s*(?:دکمه\s*)?خرید\s*(?:کلیک|بزنید|بفشارید)/i,
     /comprar\s*ahora/i,
-    /comprar/i,
+    /bot[oó]n\s*(?:de\s*)?compra/i,
+    /bot[oó]n\s*comprar/i,
+    /clic\s*en\s*comprar/i,
+    /bot[oó]n\s*verde/i,
     /شراء\s*الآن/i,
-    /شراء/i,
-    /खरीदें/i,
+    /زر\s*الشراء/i,
+    /زر\s*أخضر/i,
+    /اضغط\s*شراء/i,
+    /खरीदें\s*बटन/i,
     /mua\s*ngay/i,
-    /mua/i,
+    /nút\s*mua/i,
+    /nút\s*màu\s*xanh/i,
     /立即购买/i,
-    /购买/i,
+    /购买按钮/i,
+    /点击购买/i,
+    /绿色按钮/i,
   ];
 
   for (const pattern of buyPatterns) {
     if (pattern.test(normalized)) {
       return "buy_now";
+    }
+  }
+
+  // Also match exact single-word button label "buy" or "خرید" if given alone or as explicit button target
+  if (
+    normalized === "buy" ||
+    normalized === "buy now" ||
+    normalized === "خرید" ||
+    normalized === "خرید اکنون"
+  ) {
+    return "buy_now";
+  }
+
+  // 5. Check for "Continue" (e.g. on Benefits Application or general forms)
+  const continuePatterns = [
+    /\bcontinue\b/i,
+    /\bcontinue\s*button\b/i,
+    /\bclick\s*continue\b/i,
+    /دکمه\s*ادامه/i,
+    /ادامه\s*دهید/i,
+    /ادامه/i,
+    /continuar/i,
+    /متابعة/i,
+    /जारी\s*रखें/i,
+    /tiếp\s*tục/i,
+    /继续/i,
+  ];
+
+  for (const pattern of continuePatterns) {
+    if (pattern.test(normalized)) {
+      return "continue";
     }
   }
 

@@ -99,30 +99,63 @@ export function CoinbaseSimulator({
     }
   }, [isSandboxInView, step, usdAmount, selectedAsset]);
 
+  const highlightStartTimeRef = useRef<number>(0);
+  const activeTargetRef = useRef<HighlightedButtonTarget | null>(null);
+
   /**
    * Applies a temporary visual pulsing highlight and glowing outline around
    * the targeted button for 4-5 seconds (APP_CONFIG.highlight.durationMs: 4500ms),
    * then makes it disappear cleanly.
    *
    * @param target - The normalized button target or null.
+   * @param force - If true, immediately overrides any existing highlight (e.g. user clicked button).
    */
-  const applyTemporaryHighlight = (target: HighlightedButtonTarget | null) => {
-    logFunctionCall("COINBASE_SIMULATOR", "applyTemporaryHighlight", { target });
+  const applyTemporaryHighlight = (
+    target: HighlightedButtonTarget | null,
+    force: boolean = false
+  ) => {
+    logFunctionCall("COINBASE_SIMULATOR", "applyTemporaryHighlight", { target, force });
+    const now = Date.now();
+
+    if (!target) {
+      if (highlightTimerRef.current !== null) {
+        window.clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = null;
+      }
+      setActiveHighlight(null);
+      activeTargetRef.current = null;
+      return;
+    }
+
+    // Unless forced, protect active button from being prematurely overridden (< 4000ms)
+    // by rapid streaming transcript chatter so the user has 4–5 seconds to view it
+    if (
+      !force &&
+      activeTargetRef.current &&
+      activeTargetRef.current !== target &&
+      now - highlightStartTimeRef.current < 4000
+    ) {
+      logFunctionCall("COINBASE_SIMULATOR", "suppressHighlightOverride", {
+        active: activeTargetRef.current,
+        attempted: target,
+        elapsedMs: now - highlightStartTimeRef.current,
+      });
+      return;
+    }
+
     if (highlightTimerRef.current !== null) {
       window.clearTimeout(highlightTimerRef.current);
       highlightTimerRef.current = null;
     }
 
-    if (!target) {
-      setActiveHighlight(null);
-      return;
-    }
-
+    activeTargetRef.current = target;
+    highlightStartTimeRef.current = now;
     setActiveHighlight(target);
 
     highlightTimerRef.current = window.setTimeout(() => {
       logFunctionCall("COINBASE_SIMULATOR", "clearHighlightTimeout", { target });
       setActiveHighlight(null);
+      activeTargetRef.current = null;
       highlightTimerRef.current = null;
     }, APP_CONFIG.highlight.durationMs);
   };
@@ -131,7 +164,9 @@ export function CoinbaseSimulator({
   useEffect(() => {
     if (highlightedElement) {
       const normalized = normalizeButtonTarget(highlightedElement);
-      applyTemporaryHighlight(normalized);
+      if (normalized) {
+        applyTemporaryHighlight(normalized);
+      }
     }
   }, [highlightedElement]);
 
@@ -141,7 +176,9 @@ export function CoinbaseSimulator({
       const customEvt = e as CustomEvent<{ button: string }>;
       if (customEvt.detail?.button) {
         const normalized = normalizeButtonTarget(customEvt.detail.button);
-        applyTemporaryHighlight(normalized);
+        if (normalized) {
+          applyTemporaryHighlight(normalized, true);
+        }
       }
     };
 
@@ -437,6 +474,7 @@ export function CoinbaseSimulator({
                           });
                           setUsdAmount(preset);
                           setCustomAmountStr(String(preset));
+                          applyTemporaryHighlight(`preset_${preset}` as HighlightedButtonTarget, true);
                         }}
                         className={`w-full py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                           usdAmount === preset
@@ -517,6 +555,7 @@ export function CoinbaseSimulator({
                   <button
                     onClick={() => {
                       logFunctionCall("COINBASE_SIMULATOR", "clickEditAmount", {});
+                      applyTemporaryHighlight("edit_amount", true);
                       setStep("input");
                     }}
                     className={`text-xs text-cyan-400 hover:underline transition-all ${
@@ -631,6 +670,7 @@ export function CoinbaseSimulator({
                   logFunctionCall("COINBASE_SIMULATOR", "clickPreviewBuy", {
                     usdAmount,
                   });
+                  applyTemporaryHighlight("preview_buy", true);
                   setStep("preview");
                   setTimeout(handlePushToGuide, 150);
                 }}
@@ -661,6 +701,7 @@ export function CoinbaseSimulator({
                     cryptoQuantity,
                     usdAmount,
                   });
+                  applyTemporaryHighlight("buy_now", true);
                   setStep("success");
                   setTimeout(handlePushToGuide, 150);
                 }}
