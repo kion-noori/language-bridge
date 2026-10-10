@@ -1,0 +1,12 @@
+{
+  "name": "Language Bridge - Multilingual Visual Voice Guide",
+  "description": "Real-time multilingual voice and visual guidance agent powered by Gemini Live API to safely navigate complex English digital interfaces.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "display-capture"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
