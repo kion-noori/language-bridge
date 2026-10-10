@@ -39,6 +39,7 @@ interface ScreenCapturePanelProps {
   onRequestManualAnalysis: (base64Jpeg: string) => void;
   isAnalyzing: boolean;
   highlightedButton?: HighlightedButtonTarget | null;
+  onSandboxViewportChange?: (inView: boolean) => void;
 }
 
 /**
@@ -52,6 +53,7 @@ export function ScreenCapturePanel({
   onRequestManualAnalysis,
   isAnalyzing,
   highlightedButton,
+  onSandboxViewportChange,
 }: ScreenCapturePanelProps): React.JSX.Element {
   const [sourceType, setSourceType] = useState<ScreenSourceType>("simulator");
   const [activeFrameUrl, setActiveFrameUrl] = useState<string | null>(null);
@@ -275,6 +277,7 @@ export function ScreenCapturePanel({
             <CoinbaseSimulator
               onCaptureScreen={handleSimulatorFrame}
               highlightedElement={highlightedButton}
+              onViewportChange={onSandboxViewportChange}
             />
           )}
 

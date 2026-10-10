@@ -133,6 +133,21 @@ Trust is paramount when dealing with financial interfaces. Language Bridge hardc
 - **Multilingual Mention Detection**: Analyzes real-time agent output transcripts and guidance advice across all supported languages (including Farsi, Spanish, Arabic, Hindi, Vietnamese, Chinese, and English). Handles numeral normalization (e.g., Persian `۵۰` -> `50`) and strict phrase prioritization so compound phrases like "Preview Buy" (`پیش‌نمایش خرید`) are never conflated with "Buy" (`خرید`).
 - **Sandbox Boundary Isolation**: Implemented exclusively on the built-in Coinbase Sandbox DOM; screen detection, voice streaming, barge-in detection, and the 4-stage Trust Loop remain completely unaltered. Offscreen canvas capture frames remain pristine.
 
+### 4.9. Viewport-Based Auto-Detection for Coinbase Sandbox (`src/utils/useViewportVisibility.ts`)
+- **Intent**: Automatically detects when the built-in Coinbase Sandbox enters the browser viewport (when scrolled into view), automatically feeding live screen frames to the agent without requiring a manual "Feed to Guide" button click.
+- **Strict Non-Assumption Principle**:
+  - The sandbox is never assumed to be visible on initial page load or before the user scrolls to it.
+  - Initial viewport state begins as `false`.
+  - Screen frame provider yields `null` before the sandbox enters view, preventing premature transmission of offscreen frames.
+- **Anti-Hallucination Guardrails**:
+  - Before the sandbox is scrolled into view, the agent strictly avoids claiming it can already see the buy screen or transaction amounts.
+  - Default multilingual greetings and system instructions explicitly guide the user to scroll down to the Coinbase Sandbox so the agent can inspect it together.
+- **Automatic Multi-State Synchronization**:
+  - Once scrolled into view (`IntersectionObserver` threshold reached), the canvas snapshot is immediately captured and transmitted to the Gemini Live session.
+  - Interactive simulator updates (amount changes, step changes) automatically refresh the screen frame while in view.
+  - If scrolled out of view, frame feeding pauses and the latest frame reference is cleared.
+  - An in-view status badge (`In View • Auto-Detected`) provides clear visual feedback in the simulator title bar.
+
 ---
 
 ## 5. Security & Regulatory Compliance Boundary

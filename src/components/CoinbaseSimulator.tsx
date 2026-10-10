@@ -31,16 +31,20 @@ import {
   Camera,
   ChevronRight,
   Info,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { CoinbaseScreenState, HighlightedButtonTarget } from "../types/guide";
 import { logFunctionCall } from "../utils/logger";
 import { normalizeButtonTarget } from "../utils/buttonHighlightDetector";
 import { CoinbaseHighlightOverlay } from "./CoinbaseHighlightOverlay";
 import { APP_CONFIG } from "../config/appConfig";
+import { useViewportVisibility } from "../utils/useViewportVisibility";
 
 interface CoinbaseSimulatorProps {
   onCaptureScreen?: (dataUrl: string) => void;
   highlightedElement?: string | null;
+  onViewportChange?: (inView: boolean) => void;
 }
 
 const BTC_PRICE_USD = 67420;
@@ -54,6 +58,7 @@ const BTC_PRICE_USD = 67420;
 export function CoinbaseSimulator({
   onCaptureScreen,
   highlightedElement,
+  onViewportChange,
 }: CoinbaseSimulatorProps): React.JSX.Element {
   const [step, setStep] = useState<"input" | "preview" | "success">("input");
   const [selectedAsset, setSelectedAsset] = useState<"BTC" | "ETH" | "SOL">("BTC");
@@ -63,6 +68,36 @@ export function CoinbaseSimulator({
   const [activeHighlight, setActiveHighlight] = useState<HighlightedButtonTarget | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const highlightTimerRef = useRef<number | null>(null);
+
+  /**
+   * Tracks whether the built-in Coinbase Sandbox is in the viewport (scrolled into view).
+   * STRICT REQUIREMENT: Defaults to false on load. Only becomes true when the user
+   * scrolls the sandbox into view.
+   */
+  const isSandboxInView = useViewportVisibility(containerRef, {
+    threshold: 0.15,
+    onVisibilityChange: (inView) => {
+      logFunctionCall("COINBASE_SIMULATOR", "onVisibilityChange", { inView });
+      onViewportChange?.(inView);
+      if (inView) {
+        // Automatically capture and feed to guide without requiring "Feed to Guide" click
+        const img = captureUiAsImage();
+        if (img && onCaptureScreen) {
+          onCaptureScreen(img);
+        }
+      }
+    },
+  });
+
+  // Whenever step, usdAmount, or selectedAsset changes while in viewport, auto-update the guide feed
+  useEffect(() => {
+    if (isSandboxInView) {
+      const img = captureUiAsImage();
+      if (img && onCaptureScreen) {
+        onCaptureScreen(img);
+      }
+    }
+  }, [isSandboxInView, step, usdAmount, selectedAsset]);
 
   /**
    * Applies a temporary visual pulsing highlight and glowing outline around
@@ -314,10 +349,29 @@ export function CoinbaseSimulator({
         </div>
 
         <div className="flex items-center gap-2">
+          {isSandboxInView ? (
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-[10px] sm:text-[11px] font-semibold text-emerald-300"
+              title="Coinbase Sandbox is visible in viewport; auto-feeding frames to guide without clicking"
+            >
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span>In View • Auto-Detected</span>
+            </span>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] sm:text-[11px] font-medium text-slate-400"
+              title="Scroll down to bring Coinbase Sandbox into viewport"
+            >
+              <EyeOff className="w-3.5 h-3.5 text-slate-500" />
+              <span>Scroll into View to Feed</span>
+            </span>
+          )}
+
           <button
             onClick={handlePushToGuide}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-[11px] font-medium text-cyan-300 transition-colors"
-            title="Send current screen frame into Language Bridge"
+            title="Manual snapshot feed into Language Bridge"
           >
             <Camera className="w-3 h-3" />
             <span>Feed to Guide</span>

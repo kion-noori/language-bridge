@@ -87,7 +87,7 @@ export const APP_CONFIG = {
       isRtl: true,
       priority: true,
       sampleGoal: "می‌خواهم با خیال راحت یک مقدار کم بیت‌کوین بخرم.",
-      agentGreeting: "سلام! من همراه راهنمای شما هستم. صفحه شما را می‌بینم و به فارسی راهنمایی‌تان می‌کنم. چه کمکی از دست من برمی‌آید؟",
+      agentGreeting: "سلام! من همراه راهنمای شما هستم و به فارسی راهنمایی‌تان می‌کنم. لطفاً شبیه‌ساز خرید کوین‌بیس را در صفحه به پایین اسکرول کنید تا تصویر آن را ببینم. چه کمکی از دست من برمی‌آید؟",
       confirmationPhrases: ["بله", "تایید است", "ادامه بده", "می‌خواهم ادامه دهم"],
     },
     {
@@ -96,7 +96,7 @@ export const APP_CONFIG = {
       nativeName: "Español",
       isRtl: false,
       sampleGoal: "Quiero comprar una pequeña cantidad de Bitcoin de forma segura.",
-      agentGreeting: "¡Hola! Soy tu guía visual. Veo tu pantalla y te explicaré cada paso en español. ¿En qué te puedo ayudar hoy?",
+      agentGreeting: "¡Hola! Soy tu guía visual y te hablaré en español. Desplázate hacia abajo hasta el simulador de Coinbase para que pueda ver la pantalla de compra. ¿Cómo te puedo ayudar?",
       confirmationPhrases: ["sí", "de acuerdo", "continuar", "estoy listo"],
     },
     {
@@ -105,7 +105,7 @@ export const APP_CONFIG = {
       nativeName: "العربية",
       isRtl: true,
       sampleGoal: "أريد شراء كمية صغيرة من البيتكوين بأمان.",
-      agentGreeting: "مرحباً! أنا دليلك المرئي. أستطيع رؤية شاشتك وسأشرح لك كل خطوة باللغة العربية. كيف يمكنني مساعدتك؟",
+      agentGreeting: "مرحباً! أنا دليلك المساعد وسأتحدث معك باللغة العربية. يرجى التمرير لأسفل إلى محاكي كوينبيس حتى أتمكن من رؤية شاشة الشراء. كيف يمكنني مساعدتك؟",
       confirmationPhrases: ["نعم", "موافق", "تابع", "أنا مستعد"],
     },
     {
@@ -114,7 +114,7 @@ export const APP_CONFIG = {
       nativeName: "Türkçe",
       isRtl: false,
       sampleGoal: "Güvenli bir şekilde küçük bir miktar Bitcoin almak istiyorum.",
-      agentGreeting: "Merhaba! Görsel rehberinizim. Ekranınızı görüyorum ve size Türkçe olarak adım adım yol göstereceğim.",
+      agentGreeting: "Merhaba! Türkçe rehberinizim. Satın alma ekranını görebilmem için lütfen Coinbase simülatörüne doğru aşağı kaydırın. Nasıl yardımcı olabilirim?",
       confirmationPhrases: ["evet", "tamam", "devam et", "hazırım"],
     },
     {
@@ -123,7 +123,7 @@ export const APP_CONFIG = {
       nativeName: "हिन्दी",
       isRtl: false,
       sampleGoal: "मैं सुरक्षित रूप से थोड़ी मात्रा में बिटकॉइन खरीदना चाहता हूँ।",
-      agentGreeting: "नमस्ते! मैं आपका विजुअल गाइड हूँ। मैं आपकी स्क्रीन देख सकता हूँ और हिंदी में सहायता करूँगा।",
+      agentGreeting: "नमस्ते! मैं आपका गाइड हूँ। खरीद स्क्रीन देखने के लिए कृपया नीचे कॉइनबेस सिम्युलेटर तक स्क्रॉल करें। मैं आपकी क्या मदद कर सकता हूँ?",
       confirmationPhrases: ["हाँ", "ठीक है", "आगे बढ़ो", "तैयार हूँ"],
     },
     {
@@ -132,7 +132,7 @@ export const APP_CONFIG = {
       nativeName: "Tiếng Việt",
       isRtl: false,
       sampleGoal: "Tôi muốn mua một lượng nhỏ Bitcoin an toàn.",
-      agentGreeting: "Xin chào! Tôi là người hướng dẫn bằng giọng nói và hình ảnh của bạn.",
+      agentGreeting: "Xin chào! Tôi là người hướng dẫn của bạn. Vui lòng cuộn xuống trình mô phỏng Coinbase để tôi có thể nhìn thấy màn hình mua. Tôi có thể giúp gì cho bạn?",
       confirmationPhrases: ["có", "đồng ý", "tiếp tục", "tôi đã sẵn sàng"],
     },
     {
@@ -141,7 +141,7 @@ export const APP_CONFIG = {
       nativeName: "中文",
       isRtl: false,
       sampleGoal: "我想安全地购买少量比特币。",
-      agentGreeting: "您好！我是您的视觉语音向导，我会用中文为您详细解释屏幕内容。",
+      agentGreeting: "您好！我是您的向导。请向下滚动至Coinbase模拟器，以便我能看清购买界面并为您提供指导。请问有什么可以帮您？",
       confirmationPhrases: ["好的", "是的", "继续", "我准备好了"],
     },
     {
@@ -150,7 +150,7 @@ export const APP_CONFIG = {
       nativeName: "English",
       isRtl: false,
       sampleGoal: "I want to buy a small amount of Bitcoin safely.",
-      agentGreeting: "Hello! I am your visual voice guide. I can see your screen and will help you navigate safely.",
+      agentGreeting: "Hello! I am your voice guide. Please scroll down to the Coinbase Sandbox so I can see the buy screen and help you navigate safely.",
       confirmationPhrases: ["yes", "proceed", "continue", "I confirm"],
     },
   ] as SupportedLanguage[],
@@ -227,5 +227,6 @@ YOUR CORE MANDATES (NEVER VIOLATE):
 3. NON-CUSTODIAL & NO DIRECT ACTION: You are a guide ONLY. You do NOT execute trades, you do NOT click buttons, and you cannot place orders. You only guide the human user.
 4. EDUCATIONAL ONLY: This is interface literacy and translation guidance, NEVER financial, legal, or investment advice.
 5. SCREEN CLARITY: If the screen is blurry or occluded, gently ask the user to adjust the window or upload a clearer screenshot.
-6. BARGE-IN AWARE: The user may interrupt you at any moment. Keep answers succinct, warm, reassuring, and focused. Avoid lengthy monologues.`;
+6. BARGE-IN AWARE: The user may interrupt you at any moment. Keep answers succinct, warm, reassuring, and focused. Avoid lengthy monologues.
+7. VIEWPORT DETECTION & BUY SCREEN VISIBILITY: The Coinbase crypto buy screen is only visible to you when the user scrolls it into view. If you have not yet received an image/video frame of the Coinbase buy screen, you MUST NOT claim, assume, or hallucinate that you already see the buy screen, Bitcoin price, fees, or buttons! If the user asks for guidance before the buy screen is in view, politely tell them in ${language.name} (${language.nativeName}) to scroll down to the Coinbase Sandbox so you can see it and inspect it together. Once the screen frame arrives, proceed to explain what you see.`;
 }

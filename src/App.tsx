@@ -56,10 +56,18 @@ export default function App(): React.JSX.Element {
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState<boolean>(false);
   const [isAuditLogOpen, setIsAuditLogOpen] = useState<boolean>(false);
   const [highlightedButton, setHighlightedButton] = useState<HighlightedButtonTarget | null>(null);
+  // STRICT REQUIREMENT: Do not assume sandbox is visible on page load or before user scrolls to it
+  const [isSandboxInView, setIsSandboxInView] = useState<boolean>(false);
 
   const latestFrameRef = useRef<string | null>(null);
   const liveClientRef = useRef<LiveClient | null>(null);
   const buttonHighlightTimerRef = useRef<number | null>(null);
+  const isSandboxInViewRef = useRef<boolean>(false);
+
+  // Keep ref synchronized with state for frame provider callback
+  useEffect(() => {
+    isSandboxInViewRef.current = isSandboxInView;
+  }, [isSandboxInView]);
 
   /**
    * Triggers a temporary visual highlight (pulsing circle & glowing outline)
@@ -90,6 +98,7 @@ export default function App(): React.JSX.Element {
     language: currentLanguage.code,
     trustStage,
     highlightedButton,
+    isSandboxInView,
   });
 
   /**
@@ -122,8 +131,11 @@ export default function App(): React.JSX.Element {
       onAgentSpeakingChange: (speaking) => setIsAgentSpeaking(speaking),
     });
 
-    // Provide the latest screen frame for video streaming
-    client.registerFrameProvider(() => latestFrameRef.current);
+    // Provide screen frame ONLY when the sandbox is actively in the viewport!
+    client.registerFrameProvider(() => {
+      if (!isSandboxInViewRef.current) return null;
+      return latestFrameRef.current;
+    });
     liveClientRef.current = client;
 
     return () => {
@@ -204,6 +216,28 @@ export default function App(): React.JSX.Element {
    */
   const handleFrameAvailable = (dataUrl: string) => {
     latestFrameRef.current = dataUrl;
+  };
+
+  /**
+   * Automatically handles viewport intersection changes for the Coinbase Sandbox.
+   * When scrolled into view, automatically feeds frames to the guide.
+   * When out of view, stops frame feed and ensures agent does not see buy screen.
+   *
+   * @param inView - Boolean indicating whether Coinbase Sandbox is in viewport.
+   */
+  const handleSandboxViewportChange = (inView: boolean) => {
+    logFunctionCall("APP", "handleSandboxViewportChange", { inView });
+    setIsSandboxInView(inView);
+    if (!inView) {
+      latestFrameRef.current = null;
+    } else {
+      // If connected, immediately forward current frame to Gemini Live
+      setTimeout(() => {
+        if (liveClientRef.current && latestFrameRef.current) {
+          liveClientRef.current.sendCurrentScreenFrame();
+        }
+      }, 50);
+    }
   };
 
   /**
@@ -338,6 +372,7 @@ export default function App(): React.JSX.Element {
               onRequestManualAnalysis={handleManualInspectScreen}
               isAnalyzing={status === "analyzing"}
               highlightedButton={highlightedButton}
+              onSandboxViewportChange={handleSandboxViewportChange}
             />
           </div>
 
