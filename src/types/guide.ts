@@ -21,16 +21,6 @@ export type TrustLoopStageId =
   | "verbal_confirmation"
   | "guided_next_step";
 
-export type HighlightedButtonTarget =
-  | "preview_buy"
-  | "buy_now"
-  | "preset_10"
-  | "preset_25"
-  | "preset_50"
-  | "preset_100"
-  | "edit_amount"
-  | "continue";
-
 export type SessionStatus =
   | "idle"
   | "connecting"
@@ -42,7 +32,6 @@ export type SessionStatus =
 
 export type ScreenSourceType =
   | "simulator"
-  | "benefits"
   | "screenshare"
   | "upload"
   | "camera";
@@ -63,7 +52,6 @@ export interface ScreenAnalysisResult {
   riskWarnings: string[];
   confirmationPrompt: string;
   nextStepAdvice: string;
-  spokenScript?: string;
   rawTextResponse?: string;
   trustStage: TrustLoopStageId;
 }

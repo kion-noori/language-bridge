@@ -72,12 +72,6 @@ export const APP_CONFIG = {
     maxDimension: 1024, // Resize frame to max 1024px to preserve network bandwidth
   },
 
-  // Temporary Visual Highlight Configuration (Coinbase Sandbox only)
-  highlight: {
-    durationMs: 4500, // 4.5 seconds duration (within 4-5 seconds) before disappearing
-    pulseIntervalMs: 1000,
-  },
-
   // Supported Languages
   languages: [
     {
@@ -87,7 +81,7 @@ export const APP_CONFIG = {
       isRtl: true,
       priority: true,
       sampleGoal: "می‌خواهم با خیال راحت یک مقدار کم بیت‌کوین بخرم.",
-      agentGreeting: "سلام! من همراه راهنمای شما هستم و به فارسی راهنمایی‌تان می‌کنم. لطفاً شبیه‌ساز خرید کوین‌بیس را در صفحه به پایین اسکرول کنید تا تصویر آن را ببینم. چه کمکی از دست من برمی‌آید؟",
+      agentGreeting: "سلام! من همراه راهنمای شما هستم. صفحه شما را می‌بینم و به فارسی راهنمایی‌تان می‌کنم. چه کمکی از دست من برمی‌آید؟",
       confirmationPhrases: ["بله", "تایید است", "ادامه بده", "می‌خواهم ادامه دهم"],
     },
     {
@@ -96,7 +90,7 @@ export const APP_CONFIG = {
       nativeName: "Español",
       isRtl: false,
       sampleGoal: "Quiero comprar una pequeña cantidad de Bitcoin de forma segura.",
-      agentGreeting: "¡Hola! Soy tu guía visual y te hablaré en español. Desplázate hacia abajo hasta el simulador de Coinbase para que pueda ver la pantalla de compra. ¿Cómo te puedo ayudar?",
+      agentGreeting: "¡Hola! Soy tu guía visual. Veo tu pantalla y te explicaré cada paso en español. ¿En qué te puedo ayudar hoy?",
       confirmationPhrases: ["sí", "de acuerdo", "continuar", "estoy listo"],
     },
     {
@@ -105,7 +99,7 @@ export const APP_CONFIG = {
       nativeName: "العربية",
       isRtl: true,
       sampleGoal: "أريد شراء كمية صغيرة من البيتكوين بأمان.",
-      agentGreeting: "مرحباً! أنا دليلك المساعد وسأتحدث معك باللغة العربية. يرجى التمرير لأسفل إلى محاكي كوينبيس حتى أتمكن من رؤية شاشة الشراء. كيف يمكنني مساعدتك؟",
+      agentGreeting: "مرحباً! أنا دليلك المرئي. أستطيع رؤية شاشتك وسأشرح لك كل خطوة باللغة العربية. كيف يمكنني مساعدتك؟",
       confirmationPhrases: ["نعم", "موافق", "تابع", "أنا مستعد"],
     },
     {
@@ -114,7 +108,7 @@ export const APP_CONFIG = {
       nativeName: "Türkçe",
       isRtl: false,
       sampleGoal: "Güvenli bir şekilde küçük bir miktar Bitcoin almak istiyorum.",
-      agentGreeting: "Merhaba! Türkçe rehberinizim. Satın alma ekranını görebilmem için lütfen Coinbase simülatörüne doğru aşağı kaydırın. Nasıl yardımcı olabilirim?",
+      agentGreeting: "Merhaba! Görsel rehberinizim. Ekranınızı görüyorum ve size Türkçe olarak adım adım yol göstereceğim.",
       confirmationPhrases: ["evet", "tamam", "devam et", "hazırım"],
     },
     {
@@ -123,7 +117,7 @@ export const APP_CONFIG = {
       nativeName: "हिन्दी",
       isRtl: false,
       sampleGoal: "मैं सुरक्षित रूप से थोड़ी मात्रा में बिटकॉइन खरीदना चाहता हूँ।",
-      agentGreeting: "नमस्ते! मैं आपका गाइड हूँ। खरीद स्क्रीन देखने के लिए कृपया नीचे कॉइनबेस सिम्युलेटर तक स्क्रॉल करें। मैं आपकी क्या मदद कर सकता हूँ?",
+      agentGreeting: "नमस्ते! मैं आपका विजुअल गाइड हूँ। मैं आपकी स्क्रीन देख सकता हूँ और हिंदी में सहायता करूँगा।",
       confirmationPhrases: ["हाँ", "ठीक है", "आगे बढ़ो", "तैयार हूँ"],
     },
     {
@@ -132,7 +126,7 @@ export const APP_CONFIG = {
       nativeName: "Tiếng Việt",
       isRtl: false,
       sampleGoal: "Tôi muốn mua một lượng nhỏ Bitcoin an toàn.",
-      agentGreeting: "Xin chào! Tôi là người hướng dẫn của bạn. Vui lòng cuộn xuống trình mô phỏng Coinbase để tôi có thể nhìn thấy màn hình mua. Tôi có thể giúp gì cho bạn?",
+      agentGreeting: "Xin chào! Tôi là người hướng dẫn bằng giọng nói và hình ảnh của bạn.",
       confirmationPhrases: ["có", "đồng ý", "tiếp tục", "tôi đã sẵn sàng"],
     },
     {
@@ -141,7 +135,7 @@ export const APP_CONFIG = {
       nativeName: "中文",
       isRtl: false,
       sampleGoal: "我想安全地购买少量比特币。",
-      agentGreeting: "您好！我是您的向导。请向下滚动至Coinbase模拟器，以便我能看清购买界面并为您提供指导。请问有什么可以帮您？",
+      agentGreeting: "您好！我是您的视觉语音向导，我会用中文为您详细解释屏幕内容。",
       confirmationPhrases: ["好的", "是的", "继续", "我准备好了"],
     },
     {
@@ -150,7 +144,7 @@ export const APP_CONFIG = {
       nativeName: "English",
       isRtl: false,
       sampleGoal: "I want to buy a small amount of Bitcoin safely.",
-      agentGreeting: "Hello! I am your voice guide. Please scroll down to the Coinbase Sandbox so I can see the buy screen and help you navigate safely.",
+      agentGreeting: "Hello! I am your visual voice guide. I can see your screen and will help you navigate safely.",
       confirmationPhrases: ["yes", "proceed", "continue", "I confirm"],
     },
   ] as SupportedLanguage[],
@@ -215,18 +209,17 @@ export function buildSystemInstruction(language: SupportedLanguage): string {
   return `You are "Language Bridge", an empathetic, highly trusted real-time visual voice guide agent built for the New Agentic Economy.
 
 TARGET AUDIENCE & CONTEXT:
-The user is a non-native English speaker (speaking in ${language.name} - ${language.nativeName}) navigating complex, intimidating English-language digital interfaces (such as crypto trading screens like Coinbase or public benefits application forms like Medicaid). They understand the concepts but freeze when facing English financial jargon, bureaucratic legal forms, buttons, fees, and multi-step inputs.
+The user is a non-native English speaker (speaking in ${language.name} - ${language.nativeName}) navigating complex, intimidating English-language digital interfaces (specifically crypto trading screens like Coinbase). They understand the concepts but freeze when facing English financial jargon, buttons, fees, and multi-step forms.
 
 YOUR CORE MANDATES (NEVER VIOLATE):
 1. LANGUAGE: You MUST ALWAYS speak and respond strictly in ${language.name} (${language.nativeName}). Use calm, natural, conversational, polite speech.
 2. STRICT TRUST LOOP: Whenever analyzing the user's screen or receiving a question, you must follow this 4-step sequence:
-   Step A (Explain Screen): Tell the user what you see on the screen clearly and point to specific elements (e.g., Household Size, Monthly Gross Income, Employment Status, or Bitcoin purchase amounts).
-   Step B (Surface Risks, Fees & Requirements in Plain Language): Disclose what costs, risks, or verification rules exist. For example, explain Coinbase fees and non-reversibility, or Medicaid gross income verification rules and legal declaration requirements.
-   Step C (Ask for Explicit Verbal Confirmation): You MUST ask for explicit verbal confirmation before guiding them to the next action! For example: "Do you want me to guide you to click 'Preview Buy' or 'Continue' now?" or "آیا مایلید شما را برای زدن دکمه پیش‌نمایش خرید یا دکمه ادامه راهنمایی کنم؟"
+   Step A (Explain Screen): Tell the user what you see on the screen clearly and point to specific elements (e.g., the Bitcoin price, the "$50" input box, payment method dropdown).
+   Step B (Surface Risks & Fees in Plain Language): Disclose what costs or risks exist. For example, explain the Coinbase transaction fee, the network cost, the spread, and remind them that crypto transactions cannot be undone.
+   Step C (Ask for Explicit Verbal Confirmation): You MUST ask for explicit verbal confirmation before guiding them to the next action! For example: "Do you want me to guide you to click 'Preview Buy' now?" or "آیا مایلید شما را برای زدن دکمه پیش‌نمایش خرید راهنمایی کنم؟"
    Step D (Guide Next Step): ONLY AFTER the user confirms verbally ("Yes", "بله", "Continue"), guide them which button to press or what to enter. Never jump ahead.
-3. NON-CUSTODIAL & NO DIRECT ACTION: You are a guide ONLY. You do NOT execute trades, submit government forms, click buttons, or place orders. You only guide the human user.
-4. EDUCATIONAL ONLY: This is interface literacy, terminology explanation, and translation guidance, NEVER financial, legal, medical, or investment advice.
+3. NON-CUSTODIAL & NO DIRECT ACTION: You are a guide ONLY. You do NOT execute trades, you do NOT click buttons, and you cannot place orders. You only guide the human user.
+4. EDUCATIONAL ONLY: This is interface literacy and translation guidance, NEVER financial, legal, or investment advice.
 5. SCREEN CLARITY: If the screen is blurry or occluded, gently ask the user to adjust the window or upload a clearer screenshot.
-6. BARGE-IN AWARE: The user may interrupt you at any moment. Keep answers succinct, warm, reassuring, and focused. Avoid lengthy monologues.
-7. VIEWPORT DETECTION & DEMO SCREEN VISIBILITY: The Coinbase buy screen and Benefits Application screen are only visible to you when the user scrolls them into view. If you have not yet received an image/video frame of the active demo screen, you MUST NOT claim, assume, or hallucinate that you already see the buy screen, income fields, or buttons! If the user asks for guidance before the screen is in view, politely tell them in ${language.name} (${language.nativeName}) to scroll down to the active demo screen so you can see it and inspect it together. Once the screen frame arrives, proceed to explain what you see.`;
+6. BARGE-IN AWARE: The user may interrupt you at any moment. Keep answers succinct, warm, reassuring, and focused. Avoid lengthy monologues.`;
 }

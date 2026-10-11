@@ -48,7 +48,6 @@ export class LiveClient {
   private currentTrustStage: TrustLoopStageId = "screen_parsing";
   private videoIntervalId: number | null = null;
   private getFrameCallback: (() => string | null) | null = null;
-  private hasScreenBeenFed: boolean = false;
 
   /**
    * Initializes the LiveClient with target language and event listeners.
@@ -56,14 +55,9 @@ export class LiveClient {
    * @param languageCode - Target language ISO code.
    * @param callbacks - Event callbacks.
    */
-  constructor(
-    languageCode: string,
-    callbacks: LiveClientCallbacks,
-    initialScreenFed: boolean = false
-  ) {
+  constructor(languageCode: string, callbacks: LiveClientCallbacks) {
     this.currentLanguage = getLanguageConfig(languageCode);
     this.callbacks = callbacks;
-    this.hasScreenBeenFed = initialScreenFed;
 
     this.audioPlayer = new AudioPlayer((isSpeaking) => {
       if (this.callbacks.onAgentSpeakingChange) {
@@ -76,7 +70,7 @@ export class LiveClient {
       }
     });
 
-    logFunctionCall("LIVE_CLIENT", "constructor", { languageCode, initialScreenFed });
+    logFunctionCall("LIVE_CLIENT", "constructor", { languageCode });
   }
 
   /**
@@ -100,7 +94,6 @@ export class LiveClient {
         JSON.stringify({
           type: "init",
           languageCode: this.currentLanguage.code,
-          hasScreenBeenFed: this.hasScreenBeenFed,
         })
       );
     }
@@ -116,45 +109,6 @@ export class LiveClient {
   }
 
   /**
-   * Sets whether the screen or built-in sandbox is currently visible.
-   *
-   * @param isFed - Whether screen is visible.
-   * @param frame - Optional base64 frame data.
-   */
-  public setScreenFedState(isFed: boolean, frame?: string): void {
-    logFunctionCall("LIVE_CLIENT", "setScreenFedState", { isFed });
-    this.hasScreenBeenFed = isFed;
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(
-        JSON.stringify({
-          type: "screen_fed",
-          languageCode: this.currentLanguage.code,
-          hasScreenBeenFed: isFed,
-          ...(frame ? { video: frame } : {}),
-        })
-      );
-      if (isFed) {
-        this.sendCurrentScreenFrame();
-      }
-    }
-  }
-
-  /**
-   * Explicitly marks that the user has fed/shared their screen to the agent.
-   */
-  public markScreenFed(): void {
-    logFunctionCall("LIVE_CLIENT", "markScreenFed", {});
-    this.setScreenFedState(true);
-  }
-
-  /**
-   * Returns whether the screen has been detected / fed.
-   */
-  public getIsScreenFed(): boolean {
-    return this.hasScreenBeenFed;
-  }
-
-  /**
    * Connects to the Gemini Live session via WebSocket and initiates microphone streaming.
    *
    * @returns Promise resolving to boolean indicating success.
@@ -162,7 +116,6 @@ export class LiveClient {
   public async connect(): Promise<boolean> {
     logFunctionCall("LIVE_CLIENT", "connect", {
       language: this.currentLanguage.code,
-      hasScreenBeenFed: this.hasScreenBeenFed,
     });
     this.updateStatus("connecting");
 
@@ -177,11 +130,10 @@ export class LiveClient {
         logFunctionCall("LIVE_CLIENT", "websocket.onopen", { wsUrl });
         this.updateStatus("connected");
 
-        // Send initialization message with current screen visibility state
+        // Send initialization message
         const initMsg: LiveClientMessage = {
           type: "init",
           languageCode: this.currentLanguage.code,
-          hasScreenBeenFed: this.hasScreenBeenFed,
         };
         this.socket?.send(JSON.stringify(initMsg));
 
@@ -242,22 +194,6 @@ export class LiveClient {
           if (this.callbacks.onMicVolume) {
             this.callbacks.onMicVolume(volume);
           }
-        },
-        // Immediate client-side Barge-In trigger when user starts speaking
-        () => {
-          if (this.audioPlayer?.isCurrentlyPlaying()) {
-            logFunctionCall("LIVE_CLIENT", "localBargeInTriggered", {});
-            this.audioPlayer.stopAndFlush();
-            this.updateStatus("listening");
-            // Inform server to interrupt the Live session immediately
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-              this.socket.send(
-                JSON.stringify({
-                  type: "barge_in",
-                })
-              );
-            }
-          }
         }
       );
     }
@@ -284,7 +220,7 @@ export class LiveClient {
    * Sends the current screen frame immediately to Gemini.
    */
   public sendCurrentScreenFrame(): void {
-    if (!this.hasScreenBeenFed || !this.getFrameCallback) return;
+    if (!this.getFrameCallback) return;
     const frameBase64 = this.getFrameCallback();
     if (!frameBase64) return;
 

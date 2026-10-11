@@ -28,14 +28,12 @@ import { AuditLogModal } from "./components/AuditLogModal";
 import { APP_CONFIG, getLanguageConfig, SupportedLanguage } from "./config/appConfig";
 import { LiveClient } from "./services/liveClient";
 import {
-  HighlightedButtonTarget,
   ScreenAnalysisResult,
   SessionStatus,
   TranscriptItem,
   TrustLoopStageId,
 } from "./types/guide";
 import { logFunctionCall } from "./utils/logger";
-import { detectMentionedButton } from "./utils/buttonHighlightDetector";
 import { ShieldCheck, Info, Sparkles, HeartHandshake } from "lucide-react";
 
 /**
@@ -55,50 +53,14 @@ export default function App(): React.JSX.Element {
   const [isAgentSpeaking, setIsAgentSpeaking] = useState<boolean>(false);
   const [isSafetyModalOpen, setIsSafetyModalOpen] = useState<boolean>(false);
   const [isAuditLogOpen, setIsAuditLogOpen] = useState<boolean>(false);
-  const [highlightedButton, setHighlightedButton] = useState<HighlightedButtonTarget | null>(null);
-  // STRICT REQUIREMENT: Do not assume sandbox is visible on page load or before user scrolls to it
-  const [isSandboxInView, setIsSandboxInView] = useState<boolean>(false);
 
   const latestFrameRef = useRef<string | null>(null);
   const liveClientRef = useRef<LiveClient | null>(null);
-  const buttonHighlightTimerRef = useRef<number | null>(null);
-  const isSandboxInViewRef = useRef<boolean>(false);
-
-  // Keep ref synchronized with state for frame provider callback
-  useEffect(() => {
-    isSandboxInViewRef.current = isSandboxInView;
-  }, [isSandboxInView]);
-
-  /**
-   * Triggers a temporary visual highlight (pulsing circle & glowing outline)
-   * around a specific button on the Coinbase Sandbox for 4-5 seconds, then
-   * clears it cleanly.
-   *
-   * @param target - The button to highlight.
-   */
-  const triggerButtonHighlight = (target: HighlightedButtonTarget | null) => {
-    if (!target) return;
-    logFunctionCall("APP", "triggerButtonHighlight", { target });
-    setHighlightedButton(target);
-
-    if (buttonHighlightTimerRef.current !== null) {
-      window.clearTimeout(buttonHighlightTimerRef.current);
-      buttonHighlightTimerRef.current = null;
-    }
-
-    buttonHighlightTimerRef.current = window.setTimeout(() => {
-      logFunctionCall("APP", "clearButtonHighlightTimeout", { target });
-      setHighlightedButton(null);
-      buttonHighlightTimerRef.current = null;
-    }, APP_CONFIG.highlight.durationMs);
-  };
 
   logFunctionCall("APP", "render", {
     status,
     language: currentLanguage.code,
     trustStage,
-    highlightedButton,
-    isSandboxInView,
   });
 
   /**
@@ -109,40 +71,19 @@ export default function App(): React.JSX.Element {
       onStatusChange: (newStatus) => setStatus(newStatus),
       onTranscript: (item) => {
         setTranscript((prev) => [...prev, item]);
-        // When the agent mentions a button in spoken output or transcript, highlight it
-        if (item.role === "agent") {
-          const detected = detectMentionedButton(item.text, item.englishTranslation);
-          if (detected) {
-            triggerButtonHighlight(detected);
-          }
-        }
       },
       onTrustStageChange: (stage) => setTrustStage(stage),
-      onAnalysisResult: (result) => {
-        setAnalysis(result);
-        // Detect mentioned button from guidance fields
-        const combined = `${result.nextStepAdvice || ""} ${result.spokenScript || ""} ${result.confirmationPrompt || ""}`;
-        const detected = detectMentionedButton(combined);
-        if (detected) {
-          triggerButtonHighlight(detected);
-        }
-      },
+      onAnalysisResult: (result) => setAnalysis(result),
       onMicVolume: (vol) => setMicVolume(vol),
       onAgentSpeakingChange: (speaking) => setIsAgentSpeaking(speaking),
     });
 
-    // Provide screen frame ONLY when the sandbox is actively in the viewport!
-    client.registerFrameProvider(() => {
-      if (!isSandboxInViewRef.current) return null;
-      return latestFrameRef.current;
-    });
+    // Provide the latest screen frame for video streaming
+    client.registerFrameProvider(() => latestFrameRef.current);
     liveClientRef.current = client;
 
     return () => {
       client.disconnect();
-      if (buttonHighlightTimerRef.current !== null) {
-        window.clearTimeout(buttonHighlightTimerRef.current);
-      }
     };
   }, []);
 
@@ -219,28 +160,6 @@ export default function App(): React.JSX.Element {
   };
 
   /**
-   * Automatically handles viewport intersection changes for the Coinbase Sandbox.
-   * When scrolled into view, automatically feeds frames to the guide.
-   * When out of view, stops frame feed and ensures agent does not see buy screen.
-   *
-   * @param inView - Boolean indicating whether Coinbase Sandbox is in viewport.
-   */
-  const handleSandboxViewportChange = (inView: boolean) => {
-    logFunctionCall("APP", "handleSandboxViewportChange", { inView });
-    setIsSandboxInView(inView);
-    if (!inView) {
-      latestFrameRef.current = null;
-    } else {
-      // If connected, immediately forward current frame to Gemini Live
-      setTimeout(() => {
-        if (liveClientRef.current && latestFrameRef.current) {
-          liveClientRef.current.sendCurrentScreenFrame();
-        }
-      }, 50);
-    }
-  };
-
-  /**
    * Triggers explicit multimodal inspection of the current screen.
    *
    * @param dataUrl - Base64 JPEG.
@@ -265,20 +184,6 @@ export default function App(): React.JSX.Element {
     setTrustStage("guided_next_step");
 
     const confirmationText = currentLanguage.confirmationPhrases[0] || "Yes";
-    const guidanceText =
-      analysis?.nextStepAdvice ||
-      `عالی است. حالا لطفاً روی دکمه آبی رنگ کلیک کنید. من در هر مرحله در کنار شما هستم.`;
-    const englishTranslation =
-      "Excellent. Now please click the blue button. I am right here with you.";
-
-    // Trigger visual highlight on the guided button
-    const detected = detectMentionedButton(guidanceText, englishTranslation);
-    if (detected) {
-      triggerButtonHighlight(detected);
-    } else {
-      triggerButtonHighlight("preview_buy");
-    }
-
     setTranscript((prev) => [
       ...prev,
       {
@@ -292,8 +197,10 @@ export default function App(): React.JSX.Element {
         id: `${Date.now()}-guidance`,
         timestamp: new Date().toLocaleTimeString(),
         role: "agent",
-        text: guidanceText,
-        englishTranslation,
+        text:
+          analysis?.nextStepAdvice ||
+          `عالی است. حالا لطفاً روی دکمه آبی رنگ کلیک کنید. من در هر مرحله در کنار شما هستم.`,
+        englishTranslation: "Excellent. Now please click the blue button. I am right here with you.",
         trustStage: "guided_next_step",
       },
     ]);
@@ -310,38 +217,27 @@ export default function App(): React.JSX.Element {
       />
 
       {/* Main Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 space-y-4 sm:space-y-5">
-        {/* HERO LIVE VOICE GUIDE CONTROLLER (Primary Prominent Action) */}
-        <VoiceGuideOverlay
-          status={status}
-          isAgentSpeaking={isAgentSpeaking}
-          micVolume={micVolume}
-          currentLanguage={currentLanguage}
-          onStartSession={handleStartSession}
-          onEndSession={handleEndSession}
-          onSendTextMessage={handleSendTextMessage}
-        />
-
-        {/* Hackathon Mission & Non-Custodial Safety Summary */}
-        <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/40 border border-cyan-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-              <HeartHandshake className="w-4 h-4" />
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+        {/* Hackathon Mission & Non-Custodial Banner */}
+        <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/40 border border-cyan-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+              <HeartHandshake className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 Empowering Immigrants & Non-Native Speakers
-                <span className="text-[10px] font-normal text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
+                <span className="text-[11px] font-normal text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
                   Trust-First Agentic UX
                 </span>
               </h2>
-              <p className="text-[11px] text-slate-400">
-                The agent sees your screen, speaks your language, surfaces hidden fees, and requires verbal confirmation.
+              <p className="text-xs text-slate-400 mt-0.5">
+                The agent sees your screen, speaks your language, surfaces hidden fees, and waits for verbal consent.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <span className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>{APP_CONFIG.safety.shortDisclaimer}</span>
@@ -363,7 +259,7 @@ export default function App(): React.JSX.Element {
           onConfirmStep={handleConfirmStep}
         />
 
-        {/* Primary Workspace: Multimodal Screen (Left) + Bilingual Transcript (Right) */}
+        {/* Primary Workspace: Multimodal Screen (Left) + Voice Guide & Transcript (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left Column: Multimodal Screen Ingestion & Coinbase Simulator */}
           <div className="lg:col-span-7 space-y-4">
@@ -371,13 +267,23 @@ export default function App(): React.JSX.Element {
               onFrameAvailable={handleFrameAvailable}
               onRequestManualAnalysis={handleManualInspectScreen}
               isAnalyzing={status === "analyzing"}
-              highlightedButton={highlightedButton}
-              onSandboxViewportChange={handleSandboxViewportChange}
             />
           </div>
 
-          {/* Right Column: Live Bilingual Transcript Feed */}
+          {/* Right Column: Live Voice Controller & Bilingual Transcript Feed */}
           <div className="lg:col-span-5 space-y-4">
+            {/* Live Voice Hub & Barge-in controls */}
+            <VoiceGuideOverlay
+              status={status}
+              isAgentSpeaking={isAgentSpeaking}
+              micVolume={micVolume}
+              currentLanguage={currentLanguage}
+              onStartSession={handleStartSession}
+              onEndSession={handleEndSession}
+              onSendTextMessage={handleSendTextMessage}
+            />
+
+            {/* Live Bilingual Transcript */}
             <TranscriptFeed
               items={transcript}
               onClearTranscript={() => setTranscript([])}

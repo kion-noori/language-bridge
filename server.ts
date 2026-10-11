@@ -126,12 +126,12 @@ app.post("/api/guidance", async (req: Request, res: Response): Promise<void> => 
 
     const promptText = `
 You are Language Bridge, a trusted multilingual visual voice guide.
-The user is navigating a digital interface (such as a crypto trading screen like Coinbase or a public benefits / Medicaid income application) and their goal is: "${goal || lang.sampleGoal}".
+The user is navigating a crypto interface (like Coinbase) and their goal is: "${goal || lang.sampleGoal}".
 
 Examine the provided screen carefully. Follow the STRICT 4-STAGE TRUST LOOP:
-1. Explain what is visible on this screen in simple, reassuring terms in ${lang.name} (${lang.nativeName}) (e.g., Household Size, Monthly Gross Income, Employment Status, or Bitcoin purchase amounts).
-2. Surface all risks, financial mechanics, or verification rules (such as gross income tax reporting rules, Coinbase processing fees, network fees, and irreversibility) in plain language.
-3. Formulate an explicit verbal confirmation question asking the user if they want to proceed (e.g. "Do you want me to guide you to click 'Continue' or 'Preview Buy' now?").
+1. Explain what is visible on this screen in simple, reassuring terms in ${lang.name} (${lang.nativeName}).
+2. Surface all risks, Coinbase fees, network fees, spread, and the irreversibility of crypto purchases in plain language.
+3. Formulate an explicit verbal confirmation question asking the user if they want to proceed (e.g. "Do you want me to guide you to click 'Preview Buy' now?").
 4. Formulate the exact safe next step guidance.
 
 Return your response in JSON format matching this schema:

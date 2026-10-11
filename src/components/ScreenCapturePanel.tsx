@@ -31,16 +31,13 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { CoinbaseSimulator } from "./CoinbaseSimulator";
-import { BenefitsApplicationSimulator } from "./BenefitsApplicationSimulator";
-import { HighlightedButtonTarget, ScreenSourceType } from "../types/guide";
+import { ScreenSourceType } from "../types/guide";
 import { logFunctionCall, logError } from "../utils/logger";
 
 interface ScreenCapturePanelProps {
   onFrameAvailable: (base64Jpeg: string) => void;
   onRequestManualAnalysis: (base64Jpeg: string) => void;
   isAnalyzing: boolean;
-  highlightedButton?: HighlightedButtonTarget | null;
-  onSandboxViewportChange?: (inView: boolean) => void;
 }
 
 /**
@@ -53,8 +50,6 @@ export function ScreenCapturePanel({
   onFrameAvailable,
   onRequestManualAnalysis,
   isAnalyzing,
-  highlightedButton,
-  onSandboxViewportChange,
 }: ScreenCapturePanelProps): React.JSX.Element {
   const [sourceType, setSourceType] = useState<ScreenSourceType>("simulator");
   const [activeFrameUrl, setActiveFrameUrl] = useState<string | null>(null);
@@ -216,13 +211,13 @@ export function ScreenCapturePanel({
         </div>
 
         {/* Source switch pills */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800 self-start sm:self-auto overflow-x-auto max-w-full">
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800 self-start sm:self-auto">
           <button
             onClick={() => {
               stopMediaStream();
               setSourceType("simulator");
             }}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
               sourceType === "simulator"
                 ? "bg-cyan-600 text-white shadow-sm"
                 : "text-slate-400 hover:text-slate-200"
@@ -232,22 +227,8 @@ export function ScreenCapturePanel({
           </button>
 
           <button
-            onClick={() => {
-              stopMediaStream();
-              setSourceType("benefits");
-            }}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-              sourceType === "benefits"
-                ? "bg-cyan-600 text-white shadow-sm"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Benefits Application
-          </button>
-
-          <button
             onClick={startScreenShare}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
               sourceType === "screenshare"
                 ? "bg-cyan-600 text-white shadow-sm"
                 : "text-slate-400 hover:text-slate-200"
@@ -258,7 +239,7 @@ export function ScreenCapturePanel({
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
               sourceType === "upload"
                 ? "bg-cyan-600 text-white shadow-sm"
                 : "text-slate-400 hover:text-slate-200"
@@ -289,19 +270,7 @@ export function ScreenCapturePanel({
         {/* Left: The Active Visual Target */}
         <div className="lg:col-span-7 flex flex-col gap-3">
           {sourceType === "simulator" && (
-            <CoinbaseSimulator
-              onCaptureScreen={handleSimulatorFrame}
-              highlightedElement={highlightedButton}
-              onViewportChange={onSandboxViewportChange}
-            />
-          )}
-
-          {sourceType === "benefits" && (
-            <BenefitsApplicationSimulator
-              onCaptureScreen={handleSimulatorFrame}
-              highlightedElement={highlightedButton}
-              onViewportChange={onSandboxViewportChange}
-            />
+            <CoinbaseSimulator onCaptureScreen={handleSimulatorFrame} />
           )}
 
           {(sourceType === "screenshare" || sourceType === "camera") && (
